@@ -15,7 +15,5 @@
 
 > ℹ️  The CYD-2432S024R revision routes IO21 and IO22 to the CN1 JST socket even if the silkscreen shows "IO22" twice. The updated firmware build maps the NRF24 CSN signal to IO21 and CE to IO22 so you can wire the module using only the CN1 harness for control and power plus the SD sniffer (or the original P3 breakout) for the shared SPI bus.
 
-> 🔧  Internally the firmware now exposes a single `CYD_CN1_CS_GPIO` compile-time flag that feeds the GROVE_SDA, CC1101, NRF24, W5500, and SPI_SS definitions. Overriding that flag to IO21 keeps every SPI-based accessory aligned with the CN1 harness without chasing individual build options.
-
 After flashing the `CYD-2432W328R-or-S024R` firmware target the NRF24 menu will automatically use the new pinout. No further
 runtime configuration is required.
