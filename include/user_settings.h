@@ -1,5 +1,4 @@
-#ifndef BRUCE_USER_SETTINGS_H
-#define BRUCE_USER_SETTINGS_H
+#pragma once
 
 /**
  * @brief User-specific overrides for touch input, Wi-Fi credentials and WebUI behaviour.
@@ -9,19 +8,19 @@
  */
 
 #ifndef USER_DISABLE_TOUCH_INPUT
-#define USER_DISABLE_TOUCH_INPUT 0
+#define USER_DISABLE_TOUCH_INPUT 1
 #endif
 
 #ifndef USER_WIFI_SSID
-#define USER_WIFI_SSID ""
+#define USER_WIFI_SSID "II"
 #endif
 
 #ifndef USER_WIFI_PASSWORD
-#define USER_WIFI_PASSWORD ""
+#define USER_WIFI_PASSWORD "theconstant.6!"
 #endif
 
 #ifndef USER_AUTO_START_WEBUI
 #define USER_AUTO_START_WEBUI 1
 #endif
 
-#endif // BRUCE_USER_SETTINGS_H
+#endif // USER_SETTINGS_H
