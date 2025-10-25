@@ -29,6 +29,9 @@ CYD28_TouchR touch(CYD28_DISPLAY_HOR_RES_MAX, CYD28_DISPLAY_VER_RES_MAX);
 ***************************************************************************************/
 SPIClass touchSPI;
 void _setup_gpio() {
+#if USER_DISABLE_TOUCH_INPUT
+    log_i("Touch input disabled via user settings");
+#else
 #ifndef HAS_CAPACITIVE_TOUCH // Capacitive Touchscreen uses I2C to communicate
     pinMode(XPT2046_CS, OUTPUT);
     digitalWrite(XPT2046_CS, HIGH);
@@ -40,6 +43,7 @@ void _setup_gpio() {
         log_i("Touch IC not Started");
     } else log_i("Touch IC Started");
 #endif
+#endif
 }
 
 /***************************************************************************************
@@ -48,7 +52,7 @@ void _setup_gpio() {
 ** Description:   second stage gpio setup to make a few functions work
 ***************************************************************************************/
 void _post_setup_gpio() {
-#if defined(USE_TFT_eSPI_TOUCH)
+#if defined(USE_TFT_eSPI_TOUCH) && !USER_DISABLE_TOUCH_INPUT
     pinMode(TOUCH_CS, OUTPUT);
     uint16_t calData[5];
     File caldata = LittleFS.open("/calData", "r");
@@ -107,6 +111,9 @@ void _setBrightness(uint8_t brightval) {
 ** Handles the variables PrevPress, NextPress, SelPress, AnyKeyPress and EscPress
 **********************************************************************/
 void InputHandler(void) {
+#if USER_DISABLE_TOUCH_INPUT
+    return;
+#else
     static long d_tmp = 0;
     if (millis() - d_tmp > 200 || LongPress) {
         // I know R3CK.. I Should NOT nest if statements..
@@ -160,6 +167,7 @@ void InputHandler(void) {
             d_tmp = millis();
         }
     }
+#endif
 }
 
 /*********************************************************************
