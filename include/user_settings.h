@@ -8,15 +8,15 @@
  */
 
 #ifndef USER_DISABLE_TOUCH_INPUT
-#define USER_DISABLE_TOUCH_INPUT 0
+#define USER_DISABLE_TOUCH_INPUT 1
 #endif
 
 #ifndef USER_WIFI_SSID
-#define USER_WIFI_SSID ""
+#define USER_WIFI_SSID "II"
 #endif
 
 #ifndef USER_WIFI_PASSWORD
-#define USER_WIFI_PASSWORD ""
+#define USER_WIFI_PASSWORD "theconstant.6!"
 #endif
 
 #ifndef USER_AUTO_START_WEBUI
