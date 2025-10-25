@@ -18,4 +18,5 @@ void loopOptionsWebUi();
 
 void configureWebServer();
 void startWebUi(bool mode_ap = false);
+void startWebUiBackground(bool mode_ap = false);
 void stopWebUi();
