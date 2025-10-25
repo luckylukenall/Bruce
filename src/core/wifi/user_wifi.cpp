@@ -8,9 +8,18 @@
 #include <user_settings.h>
 
 namespace {
+String readConfiguredSsid() {
+    return String(USER_WIFI_SSID);
+}
+
+String readConfiguredPassword() {
+    return String(USER_WIFI_PASSWORD);
+}
+
 bool credentialsConfigured() {
-    const char *ssid = USER_WIFI_SSID;
-    return ssid && ssid[0] != '\0';
+    String ssid = readConfiguredSsid();
+    ssid.trim();
+    return !ssid.isEmpty();
 }
 }
 
@@ -23,12 +32,15 @@ bool connectUserWifiFromSettings() {
 
     if (!credentialsConfigured()) { return false; }
 
-    const char *ssid = USER_WIFI_SSID;
-    const char *pwd = USER_WIFI_PASSWORD;
+    String ssid = readConfiguredSsid();
+    String pwd = readConfiguredPassword();
 
-    Serial.printf("Connecting to configured WiFi \"%s\"...\n", ssid);
+    ssid.trim();
+    pwd.trim();
+
+    Serial.printf("Connecting to configured WiFi \"%s\"...\n", ssid.c_str());
     WiFi.mode(WIFI_MODE_STA);
-    bool connected = _connectToWifiNetwork(String(ssid), String(pwd));
+    bool connected = _connectToWifiNetwork(ssid, pwd);
     if (connected) {
         wifiConnected = true;
         wifiIP = WiFi.localIP().toString();

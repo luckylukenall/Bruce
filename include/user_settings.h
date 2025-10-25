@@ -22,5 +22,3 @@
 #ifndef USER_AUTO_START_WEBUI
 #define USER_AUTO_START_WEBUI 1
 #endif
-
-#endif // USER_SETTINGS_H
