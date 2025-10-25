@@ -20,6 +20,7 @@ const int default_webserverporthttp = 80;
 IPAddress AP_GATEWAY(172, 0, 0, 1); // Gateway
 
 AsyncWebServer *server = nullptr; // initialise webserver
+static bool g_startWebUiInBackground = false;
 const char *host = "bruce";
 String uploadFolder = "";
 
@@ -636,12 +637,22 @@ void configureWebServer() {
 **  Start the WebUI
 **********************************************************************/
 void startWebUi(bool mode_ap) {
+    bool interactive = !g_startWebUiInBackground;
+    bool keepWifiConnected = false;
+    bool requestedBackground = g_startWebUiInBackground;
+    g_startWebUiInBackground = false;
+
     setupSdCard();
 
-    bool keepWifiConnected = false;
     if (WiFi.status() != WL_CONNECTED) {
-        if (mode_ap) wifiConnectMenu(WIFI_AP);
-        else wifiConnectMenu(WIFI_STA);
+        if (!interactive && !mode_ap) {
+            mode_ap = true; // fall back to AP mode when background start cannot prompt the user
+        }
+        if (mode_ap) {
+            wifiConnectMenu(WIFI_AP);
+        } else {
+            wifiConnectMenu(WIFI_STA);
+        }
     } else {
         keepWifiConnected = true;
     }
@@ -662,8 +673,16 @@ void startWebUi(bool mode_ap) {
         isWebUIActive = true;
     }
     tft.setLogging();
-    drawWebUiScreen(mode_ap);
+
 #ifdef HAS_SCREEN // Headless always run in the background!
+    if (!interactive) {
+        if (requestedBackground) {
+            Serial.println("WebUI started in background mode");
+        }
+        return;
+    }
+
+    drawWebUiScreen(mode_ap);
     while (!check(EscPress)) {
         // nothing here, just to hold the screen until the server is on.
         vTaskDelay(pdMS_TO_TICKS(10));
@@ -683,5 +702,12 @@ void startWebUi(bool mode_ap) {
         delay(100);
         if (!keepWifiConnected) { wifiDisconnect(); }
     }
+#else
+    (void)requestedBackground;
 #endif
+}
+
+void startWebUiBackground(bool mode_ap) {
+    g_startWebUiInBackground = true;
+    startWebUi(mode_ap);
 }

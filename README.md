@@ -31,6 +31,18 @@ Contact us in our [Discord Server](https://discord.gg/WJ9XF9czVT)!
 For more information on each function supported by Bruce, [read our wiki here](https://github.com/pr3y/Bruce/wiki).
 Also, [read our FAQ](https://github.com/pr3y/Bruce/wiki/FAQ)
 
+## :satellite: Touch-free navigation and WebUI auto-start
+
+Boards with damaged or absent touch input can now be controlled exclusively from the WebUI. Edit
+[`include/user_settings.h`](./include/user_settings.h) to:
+
+- Disable on-device touch handling by setting `USER_DISABLE_TOUCH_INPUT` to `1`.
+- Provide your Wi-Fi SSID/password so the firmware connects automatically and starts the WebUI in
+  the background on every boot.
+
+If the board cannot join your network, it will fall back to access-point mode so you can still reach
+the WebUI from a browser.
+
 ## :computer: List of Features
 
 <details>
