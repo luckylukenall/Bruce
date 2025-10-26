@@ -56,6 +56,7 @@ bool connectUserWifiFromSettings() {
 
 void autoStartWebInterfaceFromSettings() {
 #if USER_AUTO_START_WEBUI
+    Serial.println("Auto-start WebUI: checking stored WiFi credentials before launch");
     bool connected = connectUserWifiFromSettings();
     if (isWebUIActive) return;
 
