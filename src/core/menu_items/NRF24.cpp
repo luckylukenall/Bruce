@@ -9,19 +9,41 @@ void NRF24Menu::optionsMenu() {
     options.clear();
     options.push_back({"Information", nrf_info});
 
-    if (bruceConfigPins.NRF24_bus.mosi == bruceConfigPins.SDCARD_bus.mosi &&
-        bruceConfigPins.NRF24_bus.mosi != GPIO_NUM_NC)
-        options.push_back({"Spectrum", [=]() { nrf_spectrum(&sdcardSPI); }});
-#if TFT_MOSI > 0 // Display doesn't use SPI bus
-    else if (bruceConfigPins.NRF24_bus.mosi == (gpio_num_t)TFT_MOSI)
-        options.push_back({"Spectrum", [=]() { nrf_spectrum(&tft.getSPIinstance()); }});
-#endif
-    else options.push_back({"Spectrum", [=]() { nrf_spectrum(&SPI); }});
+    options.push_back({
+        "Active module: " + nrf_module_display_name(nrf_get_active_module()),
+        [=]() { moduleSelectMenu(); }
+    });
 
-    options.push_back({"NRF Jammer", nrf_jammer});
+    options.push_back({
+        "Spectrum",
+        []() {
+            if (!nrf_require_active_module()) return;
+            nrf_spectrum();
+        }
+    });
 
-    options.push_back({"CH Jammer", nrf_channel_jammer});
-    options.push_back({"CH hopper", nrf_channel_hopper});
+    options.push_back({
+        "NRF Jammer",
+        []() {
+            if (!nrf_require_active_module()) return;
+            nrf_jammer();
+        }
+    });
+
+    options.push_back({
+        "CH Jammer",
+        []() {
+            if (!nrf_require_active_module()) return;
+            nrf_channel_jammer();
+        }
+    });
+    options.push_back({
+        "CH hopper",
+        []() {
+            if (!nrf_require_active_module()) return;
+            nrf_channel_hopper();
+        }
+    });
 
 #if defined(ARDUINO_M5STICK_C_PLUS) || defined(ARDUINO_M5STICK_C_PLUS2)
     options.push_back({"Config pins", [=]() { configMenu(); }});
@@ -30,6 +52,56 @@ void NRF24Menu::optionsMenu() {
     addOptionToMainMenu();
 
     loopOptions(options, MENU_TYPE_SUBMENU, "NRF24");
+}
+
+void NRF24Menu::moduleSelectMenu() {
+    options.clear();
+
+    auto makeLabel = [](Nrf24Module module, const char *name) {
+        String label = name;
+        if (nrf_get_active_module() == module) label += " (active)";
+        return label;
+    };
+
+    options.push_back({
+        makeLabel(Nrf24Module::Primary, "Primary"),
+        [=]() {
+            if (nrf_set_active_module(Nrf24Module::Primary)) {
+                optionsMenu();
+            } else {
+                displayError("Primary module not configured");
+                delay(750);
+                moduleSelectMenu();
+            }
+        }
+    });
+
+    if (nrf_has_module(Nrf24Module::Secondary)) {
+        options.push_back({
+            makeLabel(Nrf24Module::Secondary, "Secondary"),
+            [=]() {
+                if (nrf_set_active_module(Nrf24Module::Secondary)) {
+                    optionsMenu();
+                } else {
+                    displayError("Secondary module not configured");
+                    delay(750);
+                    moduleSelectMenu();
+                }
+            }
+        });
+    } else {
+        options.push_back({
+            "Secondary (not configured)",
+            []() {
+                displayError("Wire the secondary module and update NRF pins");
+                delay(750);
+            }
+        });
+    }
+
+    options.push_back({"Back", [=]() { optionsMenu(); }});
+
+    loopOptions(options, MENU_TYPE_SUBMENU, "NRF Module");
 }
 
 void NRF24Menu::configMenu() {

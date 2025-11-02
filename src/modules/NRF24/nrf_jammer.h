@@ -18,6 +18,8 @@ FLAFS:
     NRF24_MOSI_PIN=-1 ; Set this pin accordingly
     NRF24_SCK_PIN=-1  ; Set this pin accordingly
     NRF24_MISO_PIN=-1 ; Set this pin accordingly
+    NRF24_SECONDARY_CE_PIN=-1   ; Optional: enable second module support
+    NRF24_SECONDARY_SS_PIN=-1   ; Optional: enable second module support
 */
 
 void nrf_jammer();

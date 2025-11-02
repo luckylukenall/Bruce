@@ -32,6 +32,10 @@ void BruceConfigPins::fromJson(JsonObject obj) {
         log_e("Fail");
     }
 
+    if (!root["NRF24_Secondary_Pins"].isNull()) {
+        NRF24_secondary_bus.fromJson(root["NRF24_Secondary_Pins"].as<JsonObject>());
+    }
+
     if (!root["SDCard_Pins"].isNull()) {
         SDCARD_bus.fromJson(root["SDCard_Pins"].as<JsonObject>());
     } else {
@@ -82,6 +86,9 @@ void BruceConfigPins::toJson(JsonObject obj) const {
 
     JsonObject _NRF = root["NRF24_Pins"].to<JsonObject>();
     NRF24_bus.toJson(_NRF);
+
+    JsonObject _NRF_secondary = root["NRF24_Secondary_Pins"].to<JsonObject>();
+    NRF24_secondary_bus.toJson(_NRF_secondary);
 
     JsonObject _SD = root["SDCard_Pins"].to<JsonObject>();
     SDCARD_bus.toJson(_SD);
@@ -192,6 +199,7 @@ void BruceConfigPins::factoryReset() {
 void BruceConfigPins::validateConfig() {
     validateSpiPins(CC1101_bus);
     validateSpiPins(NRF24_bus);
+    validateSpiPins(NRF24_secondary_bus);
     validateSpiPins(SDCARD_bus);
     validateI2CPins(i2c_bus);
     validateUARTPins(uart_bus);
@@ -204,9 +212,14 @@ void BruceConfigPins::setCC1101Pins(SPIPins value) {
     saveFile();
 }
 
-void BruceConfigPins::setNrf24Pins(SPIPins value) {
-    NRF24_bus = value;
-    validateSpiPins(NRF24_bus);
+void BruceConfigPins::setNrf24Pins(SPIPins value, uint8_t module) {
+    if (module == 1) {
+        NRF24_secondary_bus = value;
+        validateSpiPins(NRF24_secondary_bus);
+    } else {
+        NRF24_bus = value;
+        validateSpiPins(NRF24_bus);
+    }
     saveFile();
 }
 
@@ -230,7 +243,7 @@ void BruceConfigPins::setUARTPins(UARTPins value) {
     validateUARTPins(value);
     saveFile();
 }
-void BruceConfigPins::validateSpiPins(SPIPins value) {
+void BruceConfigPins::validateSpiPins(SPIPins &value) {
     if (value.sck < 0 || value.sck > GPIO_PIN_COUNT) value.sck = GPIO_NUM_NC;
     if (value.miso < 0 || value.miso > GPIO_PIN_COUNT) value.miso = GPIO_NUM_NC;
     if (value.mosi < 0 || value.mosi > GPIO_PIN_COUNT) value.mosi = GPIO_NUM_NC;
@@ -239,12 +252,12 @@ void BruceConfigPins::validateSpiPins(SPIPins value) {
     if (value.io2 < 0 || value.io2 > GPIO_PIN_COUNT) value.io2 = GPIO_NUM_NC;
 }
 
-void BruceConfigPins::validateI2CPins(I2CPins value) {
+void BruceConfigPins::validateI2CPins(I2CPins &value) {
     if (value.sda < 0 || value.sda > GPIO_PIN_COUNT) value.sda = GPIO_NUM_NC;
     if (value.scl < 0 || value.scl > GPIO_PIN_COUNT) value.scl = GPIO_NUM_NC;
 }
 
-void BruceConfigPins::validateUARTPins(UARTPins value) {
+void BruceConfigPins::validateUARTPins(UARTPins &value) {
     if (value.rx < 0 || value.rx > GPIO_PIN_COUNT) value.rx = GPIO_NUM_NC;
     if (value.tx < 0 || value.tx > GPIO_PIN_COUNT) value.tx = GPIO_NUM_NC;
 }

@@ -1,8 +1,71 @@
 #include "nrf_common.h"
+#include "../../core/display.h"
 #include "../../core/mykeyboard.h"
 
 RF24 NRFradio(NRF24_CE_PIN, NRF24_SS_PIN);
 SPIClass *NRFSPI;
+
+static Nrf24Module activeModule = Nrf24Module::Primary;
+
+static BruceConfigPins::SPIPins &getBusForModule(Nrf24Module module) {
+    return (module == Nrf24Module::Secondary) ? bruceConfigPins.NRF24_secondary_bus : bruceConfigPins.NRF24_bus;
+}
+
+bool nrf_has_module(Nrf24Module module) { return getBusForModule(module).isConfigured(); }
+
+Nrf24Module nrf_get_active_module() { return activeModule; }
+
+bool nrf_set_active_module(Nrf24Module module) {
+    if (!nrf_has_module(module)) return false;
+    activeModule = module;
+    return true;
+}
+
+const BruceConfigPins::SPIPins &nrf_active_pins() {
+    if (!nrf_has_module(activeModule)) {
+        if (nrf_has_module(Nrf24Module::Primary)) activeModule = Nrf24Module::Primary;
+        else if (nrf_has_module(Nrf24Module::Secondary)) activeModule = Nrf24Module::Secondary;
+    }
+    return getBusForModule(activeModule);
+}
+
+String nrf_module_display_name(Nrf24Module module) {
+    switch (module) {
+    case Nrf24Module::Secondary:
+        return String(F("Secondary"));
+    case Nrf24Module::Primary:
+    default:
+        return String(F("Primary"));
+    }
+}
+
+bool nrf_require_active_module() {
+    if (nrf_has_module(nrf_get_active_module())) return true;
+
+    displayError("NRF module pins not configured");
+    delay(750);
+    return false;
+}
+
+static SPIClass *resolveSpiForPins(const BruceConfigPins::SPIPins &pins) {
+    if (pins.mosi == (gpio_num_t)TFT_MOSI && pins.mosi != GPIO_NUM_NC) {
+#if TFT_MOSI > 0
+        return &tft.getSPIinstance();
+#else
+        return &SPI;
+#endif
+    }
+
+    if (pins.mosi == bruceConfigPins.SDCARD_bus.mosi) {
+        return &sdcardSPI;
+    }
+
+    if (pins.mosi == bruceConfigPins.CC1101_bus.mosi && pins.mosi != bruceConfigPins.SDCARD_bus.mosi) {
+        return &CC_NRF_SPI;
+    }
+
+    return &SPI;
+}
 
 void nrf_info() {
     tft.fillScreen(bruceConfig.bgColor);
@@ -21,48 +84,32 @@ void nrf_info() {
         "This device is VERY sensible to noise, so long wires or passing near VCC line can make "
         "things go wrong."
     );
+    padprintln("");
+    padprintln("Active module: " + nrf_module_display_name(nrf_get_active_module()));
+    if (nrf_has_module(Nrf24Module::Secondary)) padprintln("Secondary module: available");
+    else padprintln("Secondary module: not configured");
+    padprintln("Use 'Active module' in the NRF24 menu to switch radios.");
     delay(1000);
     while (!check(AnyKeyPress));
 }
 
 bool nrf_start() {
-    pinMode(bruceConfigPins.NRF24_bus.cs, OUTPUT);
-    digitalWrite(bruceConfigPins.NRF24_bus.cs, HIGH);
-    pinMode(bruceConfigPins.NRF24_bus.io0, OUTPUT);
-    digitalWrite(bruceConfigPins.NRF24_bus.io0, LOW);
+    const auto &pins = nrf_active_pins();
+    if (!pins.isConfigured()) return false;
 
-    if (bruceConfigPins.NRF24_bus.mosi == (gpio_num_t)TFT_MOSI &&
-        bruceConfigPins.NRF24_bus.mosi != GPIO_NUM_NC) { // (T_EMBED), CORE2 and others
-#if TFT_MOSI > 0 // condition for Headless and 8bit displays (no SPI bus)
-        NRFSPI = &tft.getSPIinstance();
-#else
-        NRFSPI = &SPI;
-#endif
+    pinMode(pins.cs, OUTPUT);
+    digitalWrite(pins.cs, HIGH);
+    pinMode(pins.io0, OUTPUT);
+    digitalWrite(pins.io0, LOW);
 
-    } else if (bruceConfigPins.NRF24_bus.mosi == bruceConfigPins.SDCARD_bus.mosi) {
-        // CC1101 shares SPI with SDCard (Cardputer and CYDs)
-
-        NRFSPI = &sdcardSPI;
-    } else if (bruceConfigPins.NRF24_bus.mosi == bruceConfigPins.CC1101_bus.mosi &&
-               bruceConfigPins.NRF24_bus.mosi != bruceConfigPins.SDCARD_bus.mosi) {
-        // Smoochie board shares CC1101 and NRF24 SPI bus with different CS pins at
-        // the same time, different from StickCs that uses the same Bus, but one at a
-        // time (same CS Pin)
-        NRFSPI = &CC_NRF_SPI;
-    } else {
-        NRFSPI = &SPI;
-    }
-    NRFSPI->begin(
-        (int8_t)bruceConfigPins.NRF24_bus.sck,
-        (int8_t)bruceConfigPins.NRF24_bus.miso,
-        (int8_t)bruceConfigPins.NRF24_bus.mosi
-    );
+    NRFSPI = resolveSpiForPins(pins);
+    NRFSPI->begin((int8_t)pins.sck, (int8_t)pins.miso, (int8_t)pins.mosi);
     delay(10);
 
     if (NRFradio.begin(
             NRFSPI,
-            rf24_gpio_pin_t(bruceConfigPins.NRF24_bus.io0),
-            rf24_gpio_pin_t(bruceConfigPins.NRF24_bus.cs)
+            rf24_gpio_pin_t(pins.io0),
+            rf24_gpio_pin_t(pins.cs)
         )) {
         return true;
     } else return false;

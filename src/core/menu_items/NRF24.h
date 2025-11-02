@@ -9,6 +9,7 @@ public:
 
     void optionsMenu(void);
     void configMenu(void);
+    void moduleSelectMenu(void);
     void drawIcon(float scale);
     void drawIconImg();
     bool getTheme() { return bruceConfig.theme.nrf; }
