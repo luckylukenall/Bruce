@@ -145,6 +145,26 @@
 #define NRF24_CE_PIN -1
 #endif
 
+#ifndef NRF24_SECONDARY_SCK_PIN
+#define NRF24_SECONDARY_SCK_PIN -1
+#endif
+
+#ifndef NRF24_SECONDARY_MISO_PIN
+#define NRF24_SECONDARY_MISO_PIN -1
+#endif
+
+#ifndef NRF24_SECONDARY_MOSI_PIN
+#define NRF24_SECONDARY_MOSI_PIN -1
+#endif
+
+#ifndef NRF24_SECONDARY_SS_PIN
+#define NRF24_SECONDARY_SS_PIN -1
+#endif
+
+#ifndef NRF24_SECONDARY_CE_PIN
+#define NRF24_SECONDARY_CE_PIN -1
+#endif
+
 #ifndef CC1101_SCK_PIN
 #define CC1101_SCK_PIN -1
 #endif

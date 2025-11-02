@@ -82,6 +82,11 @@ public:
             obj["io0"] = io0;
             obj["io2"] = io2;
         }
+
+        bool isConfigured() const {
+            return sck != GPIO_NUM_NC && miso != GPIO_NUM_NC && mosi != GPIO_NUM_NC && cs != GPIO_NUM_NC &&
+                   io0 != GPIO_NUM_NC;
+        }
     };
 
     const char *filepath = "/brucePins.conf";
@@ -110,6 +115,18 @@ public:
     };
 #else
     SPIPins NRF24_bus;
+#endif
+
+#ifdef NRF24_SECONDARY_SCK_PIN
+    SPIPins NRF24_secondary_bus = {
+        (gpio_num_t)NRF24_SECONDARY_SCK_PIN,
+        (gpio_num_t)NRF24_SECONDARY_MISO_PIN,
+        (gpio_num_t)NRF24_SECONDARY_MOSI_PIN,
+        (gpio_num_t)NRF24_SECONDARY_SS_PIN,
+        (gpio_num_t)NRF24_SECONDARY_CE_PIN
+    };
+#else
+    SPIPins NRF24_secondary_bus;
 #endif
 
 #ifdef SDCARD_SCK
@@ -155,13 +172,13 @@ public:
     void toJson(JsonObject obj) const;
 
     void setCC1101Pins(SPIPins value);
-    void setNrf24Pins(SPIPins value);
+    void setNrf24Pins(SPIPins value, uint8_t module = 0);
     void setSDCardPins(SPIPins value);
 
     void setSpiPins(SPIPins value);
     void setI2CPins(I2CPins value);
     void setUARTPins(UARTPins value);
-    void validateSpiPins(SPIPins value);
-    void validateI2CPins(I2CPins value);
-    void validateUARTPins(UARTPins value);
+    void validateSpiPins(SPIPins &value);
+    void validateI2CPins(I2CPins &value);
+    void validateUARTPins(UARTPins &value);
 };

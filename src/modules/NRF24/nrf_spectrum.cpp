@@ -8,33 +8,36 @@
 uint8_t channel[CHANNELS];
 
 // Register Access Functions
-inline byte getRegister(SPIClass &SSPI, byte r) {
+inline byte getRegister(SPIClass &SSPI, byte r, gpio_num_t csPin) {
 
-    digitalWrite(NRF24_SS_PIN, LOW);
+    digitalWrite(csPin, LOW);
     byte c = SSPI.transfer(r & 0x1F);
     c = SSPI.transfer(0);
-    digitalWrite(NRF24_SS_PIN, HIGH);
+    digitalWrite(csPin, HIGH);
 
     return c;
 }
 
-inline void setRegister(SPIClass &SSPI, byte r, byte v) {
+inline void setRegister(SPIClass &SSPI, byte r, byte v, gpio_num_t csPin) {
 
-    digitalWrite(NRF24_SS_PIN, LOW);
+    digitalWrite(csPin, LOW);
     SSPI.transfer((r & 0x1F) | 0x20);
     SSPI.transfer(v);
-    digitalWrite(NRF24_SS_PIN, HIGH);
+    digitalWrite(csPin, HIGH);
 }
 
-inline void powerDown(SPIClass &SSPI) { setRegister(SSPI, 0x00, getRegister(SSPI, 0x00) & ~0x02); }
+inline void powerDown(SPIClass &SSPI, const BruceConfigPins::SPIPins &pins) {
+    setRegister(SSPI, 0x00, getRegister(SSPI, 0x00, pins.cs) & ~0x02, pins.cs);
+    digitalWrite(pins.io0, LOW);
+}
 
 // scanning channels
 #define _BW tftWidth / CHANNELS
-String scanChannels(SPIClass *SSPI, bool web) {
+String scanChannels(SPIClass &SSPI, const BruceConfigPins::SPIPins &pins, bool web) {
     String result = "{";
 
     uint8_t rpdValues[CHANNELS] = {0};
-    digitalWrite(NRF24_CE_PIN, LOW);
+    digitalWrite(pins.io0, LOW);
 
     for (int i = 0; i < CHANNELS; i++) {
         NRFradio.setChannel(i);
@@ -47,7 +50,7 @@ String scanChannels(SPIClass *SSPI, bool web) {
         rpdValues[i] = channel[i];
     }
 
-    digitalWrite(NRF24_CE_PIN, HIGH);
+    digitalWrite(pins.io0, HIGH);
 
     for (int i = 0; i < CHANNELS; i++) {
         int level = rpdValues[i];
@@ -76,7 +79,7 @@ String scanChannels(SPIClass *SSPI, bool web) {
                    // used in the WebUI (Future)
 }
 
-void nrf_spectrum(SPIClass *SSPI) {
+void nrf_spectrum() {
     tft.fillScreen(bruceConfig.bgColor);
     tft.setTextSize(FP);
     tft.drawString("2.40Ghz", 0, tftHeight - LH);
@@ -84,6 +87,8 @@ void nrf_spectrum(SPIClass *SSPI) {
     tft.drawRightString("2.48Ghz", tftWidth, tftHeight - LH, 1);
 
     if (nrf_start()) {
+        const auto &pins = nrf_active_pins();
+        SPIClass &spi = *NRFSPI;
         NRFradio.setAutoAck(false);
         NRFradio.disableCRC();       // accept any signal we find
         NRFradio.setAddressWidth(2); // a reverse engineering tactic (not typically recommended)
@@ -98,9 +103,9 @@ void nrf_spectrum(SPIClass *SSPI) {
         for (uint8_t i = 0; i < 6; ++i) { NRFradio.openReadingPipe(i, noiseAddress[i]); }
         NRFradio.setDataRate(RF24_1MBPS);
 
-        while (!check(EscPress)) { scanChannels(SSPI); }
+        while (!check(EscPress)) { scanChannels(spi, pins, false); }
         NRFradio.stopListening();
-        powerDown(*SSPI);
+        powerDown(spi, pins);
         delay(250);
         return;
 
